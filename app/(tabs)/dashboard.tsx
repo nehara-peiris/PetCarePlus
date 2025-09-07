@@ -68,6 +68,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Pets Section */}
       <Text style={styles.heading}>🐾 My Pets</Text>
 
       <FlatList
@@ -85,18 +86,24 @@ export default function DashboardScreen() {
         <Button title="Add Pet" onPress={() => router.push("/(tabs)/pets/add")} />
       </View>
 
-      <Text style={styles.heading}>⏰ Reminders</Text>
+      {/* Reminders Section */}
+      <Text style={styles.heading}>⏰ Upcoming Reminders</Text>
 
       {reminders.length === 0 ? (
         <Text style={styles.empty}>No reminders yet. Add one!</Text>
       ) : (
         reminders.slice(0, 5).map((reminder) => (
-          <View key={reminder.id} style={styles.reminderCard}>
-            <Text style={styles.reminderTitle}>{reminder.title}</Text>
-            {reminder.date ? <Text>Date: {reminder.date}</Text> : null}
-            {reminder.time ? <Text>Time: {reminder.time}</Text> : null}
-            <Text>Type: {reminder.type}</Text>
-          </View>
+          <TouchableOpacity
+            key={reminder.id}
+            onPress={() => router.push(`/(tabs)/pets/${reminder.petId}`)}
+          >
+            <View style={styles.reminderCard}>
+              <Text style={styles.reminderTitle}>{reminder.title}</Text>
+              {reminder.date ? <Text>Date: {reminder.date}</Text> : null}
+              {reminder.time ? <Text>Time: {reminder.time}</Text> : null}
+              <Text>Type: {reminder.type}</Text>
+            </View>
+          </TouchableOpacity>
         ))
       )}
 
