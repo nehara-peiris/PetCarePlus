@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { addDoc, collection, getDocs, query, where, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
-import { useLocalSearchParams } from "expo-router";
 
 export default function AddReminderScreen() {
-   const router = useRouter();
-  const { petId: fromPet } = useLocalSearchParams<{ petId?: string }>(); // ✅ grab petId if passed
-  const [petId, setPetId] = useState(fromPet || "");
+  const router = useRouter();
+  const { petId: fromPet } = useLocalSearchParams<{ petId?: string }>();
 
+  const [petId, setPetId] = useState(fromPet || "");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -93,15 +92,20 @@ export default function AddReminderScreen() {
         onChangeText={setType}
       />
 
-      <Text style={styles.label}>Select Pet:</Text>
-      {pets.map((pet) => (
-        <Button
-          key={pet.id}
-          title={pet.name}
-          onPress={() => setPetId(pet.id)}
-          color={petId === pet.id ? "green" : "gray"}
-        />
-      ))}
+      {/* Only show pet selector if petId is not pre-set */}
+      {!petId && (
+        <>
+          <Text style={styles.label}>Select Pet:</Text>
+          {pets.map((pet) => (
+            <Button
+              key={pet.id}
+              title={pet.name}
+              onPress={() => setPetId(pet.id)}
+              color={petId === pet.id ? "green" : "gray"}
+            />
+          ))}
+        </>
+      )}
 
       <View style={{ marginTop: 20 }}>
         <Button title="Save Reminder" onPress={handleAddReminder} />
