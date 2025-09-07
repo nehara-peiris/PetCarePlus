@@ -3,16 +3,18 @@ import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { addDoc, collection, getDocs, query, where, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
+import { useLocalSearchParams } from "expo-router";
 
 export default function AddReminderScreen() {
-  const router = useRouter();
+   const router = useRouter();
+  const { petId: fromPet } = useLocalSearchParams<{ petId?: string }>(); // ✅ grab petId if passed
+  const [petId, setPetId] = useState(fromPet || "");
 
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [type, setType] = useState("daily"); // daily or special
   const [pets, setPets] = useState<{ id: string; name: string }[]>([]);
-  const [petId, setPetId] = useState("");
 
   useEffect(() => {
     const fetchPets = async () => {

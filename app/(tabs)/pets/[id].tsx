@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, StyleSheet, Button, ActivityIndicator, Alert, Image } from "react-native";
+import { View, Text, StyleSheet, Button, ActivityIndicator, Alert, Image, ScrollView } from "react-native";
 import { useEffect, useState } from "react";
-import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 type Pet = {
@@ -19,7 +19,9 @@ export default function PetDetailsScreen() {
 
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reminders, setReminders] = useState<any[]>([]);
 
+  // Fetch pet details
   useEffect(() => {
     if (!id) return;
 
@@ -40,29 +42,41 @@ export default function PetDetailsScreen() {
     fetchPet();
   }, [id]);
 
+  // Fetch reminders linked to this pet
+  useEffect(() => {
+    if (!id) return;
+
+    const remindersRef = collection(db, "reminders");
+    const q = query(remindersRef, where("petId", "==", id));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+      setReminders(list);
+    });
+
+    return unsubscribe;
+  }, [id]);
+
   const handleDelete = async () => {
     if (!id) return;
 
-    Alert.alert(
-      "Delete Pet",
-      "Are you sure you want to delete this pet?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteDoc(doc(db, "pets", id));
-              Alert.alert("Success", "Pet deleted successfully!");
-              router.replace("/(tabs)/dashboard");
-            } catch (err: any) {
-              Alert.alert("Error", err.message);
-            }
-          },
+    Alert.alert("Delete Pet", "Are you sure you want to delete this pet?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(db, "pets", id));
+            Alert.alert("Success", "Pet deleted successfully!");
+            router.replace("/(tabs)/dashboard");
+          } catch (err: any) {
+            Alert.alert("Error", err.message);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (loading) {
@@ -83,7 +97,7 @@ export default function PetDetailsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{pet.name}</Text>
 
       {pet.imageUrl ? (
@@ -105,14 +119,48 @@ export default function PetDetailsScreen() {
       <View style={{ marginTop: 20 }}>
         <Button title="Delete Pet" color="red" onPress={handleDelete} />
       </View>
-    </View>
+
+      {/* Reminders Section */}
+      <Text style={styles.reminderTitle}>Reminders</Text>
+
+      {reminders.length === 0 ? (
+        <Text style={styles.noReminders}>No reminders yet.</Text>
+      ) : (
+        reminders.map((reminder) => (
+          <View key={reminder.id} style={styles.reminderCard}>
+            <Text style={styles.reminderText}>{reminder.title}</Text>
+            {reminder.date ? <Text>Date: {reminder.date}</Text> : null}
+            {reminder.time ? <Text>Time: {reminder.time}</Text> : null}
+            <Text>Type: {reminder.type}</Text>
+          </View>
+        ))
+      )}
+
+      <View style={{ marginTop: 20 }}>
+        <Button
+          title="Add Reminder"
+          onPress={() => router.push(`/(tabs)/reminders/add?petId=${pet.id}`)}
+        />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  title: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
+  container: { flexGrow: 1, padding: 20, backgroundColor: "#fff" },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
   detail: { fontSize: 18, marginBottom: 10 },
   buttons: { marginTop: 20, flexDirection: "row", justifyContent: "space-between" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  reminderTitle: { fontSize: 22, fontWeight: "bold", marginTop: 30 },
+  noReminders: { marginTop: 10, color: "gray" },
+  reminderCard: {
+    marginTop: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#f9f9f9",
+  },
+  reminderText: { fontWeight: "bold", marginBottom: 5 },
 });
